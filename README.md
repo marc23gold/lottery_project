@@ -1,6 +1,6 @@
-## Foundry
+## Lottery  
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+**This project creates a provably random lottery**
 
 Foundry consists of:
 
