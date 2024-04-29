@@ -32,5 +32,44 @@ contract TestRaffle is Test {
         callbackGasLimit
         ) = config.activeConfig();
         console.log("Raffle address: ", address(raffle));
+        vm.deal(PLAYER, STARTING_BALANCE);
     }
+
+    function testRaffleIsDoingSomething() external view {
+        assert(raffle.getRaffleState() == Raffle.RaffleState.OPEN);
+    }
+    /**
+     * @dev enter raffle tests
+     */
+    function testRaffleRevertsWhenYouDontPayEnough() external {
+        //arrange
+        vm.prank(PLAYER);
+        
+        //act
+        vm.expectRevert(Raffle.Raffle__NotEnoughEth.selector);
+        raffle.enterRaffle();
+
+        //assert
+    }
+
+    function testRaffleRecordsPlayerWhenTheyEnter() external{
+        //arrange
+        vm.prank(PLAYER);
+
+        raffle.enterRaffle{value: STARTING_BALANCE}();
+        //act
+        address player = raffle.getPlayer(0);
+        //assert
+        assert(player == PLAYER);
+
+    }
+
+    function testEmitsEventOnEntrance() external {
+        //arrange
+        vm.expectEmit(true,false,false,false, address(raffle));
+
+        //act
+        //assert
+    }
+
 }
