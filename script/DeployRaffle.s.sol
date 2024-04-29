@@ -23,6 +23,7 @@ contract DeployRaffle is Script {
 
         if(subscriptionId == 0) {
             CreateSubscription createSubscription = new CreateSubscription();
+            subscriptionId = createSubscription.createSubscription(vrfCoordinator);
         }
 
         Raffle raffle;
