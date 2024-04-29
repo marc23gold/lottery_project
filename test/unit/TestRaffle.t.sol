@@ -11,6 +11,9 @@ contract TestRaffle is Test {
     Raffle raffle;
     HelperConfig config;
 
+    /*events*/
+    event EnteredRaffle(address indexed player);
+
     address public PLAYER = makeAddr("player");
     uint256 public constant STARTING_BALANCE = 10 ether; 
     uint256 entranceFee;
@@ -66,10 +69,24 @@ contract TestRaffle is Test {
 
     function testEmitsEventOnEntrance() external {
         //arrange
+        vm.prank(PLAYER);
         vm.expectEmit(true,false,false,false, address(raffle));
+        emit EnteredRaffle(PLAYER);
+        raffle.enterRaffle{value: entranceFee}();
 
         //act
         //assert
+    }
+
+    function testCantEnterWhenRaffleIsCalculating() external {
+        vm.prank(PLAYER);
+        raffle.enterRaffle{value: entranceFee}();
+        vm.warp(block.timestamp + interval + 1);
+        vm.roll(block.number + 1);
+        raffle.performUpkeep("");
+        vm.expectRevert(Raffle.Raffle__RaffleNotOpen.selector);
+        vm.prank(PLAYER);
+        raffle.enterRaffle{value: entranceFee}();
     }
 
 }
