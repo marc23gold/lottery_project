@@ -5,6 +5,8 @@ pragma solidity ^0.8.18;
 import {Script, console} from "forge-std/Script.sol";
 import {HelperConfig} from "./HelperConfig.s.sol";
 import {VRFCoordinatorV2Mock} from "chainlink-brownie-contracts/contracts/src/v0.8/mocks/VRFCoordinatorV2Mock.sol";
+import {LinkToken} from "../test/mocks/LinkToken.sol";
+import {DevOpsTools} from "../lib/foundry-devops/src/DevOpsTools.sol";
 
 contract CreateSubscription is Script{
 
@@ -15,7 +17,7 @@ contract CreateSubscription is Script{
         address vrfCoordinator,
         ,
         ,
-        
+        ,
         ) = config.activeConfig();
         return createSubscription(vrfCoordinator);
     }
@@ -44,12 +46,62 @@ contract FundSubscription is Script{
         ,
         address vrfCoordinator,
         ,
-        uint64 subscriptionId,
+        uint64 subscriptionId,,address link
         ) = config.activeConfig();
-        fundSubscription(vrfCoordinator, subscriptionId); 
+        fundSubscription(vrfCoordinator, subscriptionId, link); 
+    }
+
+    function fundSubscription(address vrfCoordinator, uint64 subscriptionId, address link) public {
+        console.log("Funding subscription on ChainId:,", block.chainid);
+        console.log("Funding subscription with link token: ", address(link));
+        console.log("On ChainID:", block.chainid);
+        console.log("Using vrfCoordinator: ", vrfCoordinator);
+        if(block.chainid == 31337) {
+            vm.startBroadcast();
+            VRFCoordinatorV2Mock(vrfCoordinator).fundSubscription(subscriptionId, FUND_AMOUNT);
+
+            vm.stopBroadcast();
+        } else {
+            vm.startBroadcast();
+            LinkToken(link).transferAndCall(vrfCoordinator, FUND_AMOUNT, abi.encode(subscriptionId));
+            vm.stopBroadcast();
+        }
     }
 
     function run() external {
         fundSubscriptionUsingConfig();
+    }
+}
+
+contract AddConsumer is Script{
+
+    function addConsumerUsingConfig(address raffle) public {
+        HelperConfig config = new HelperConfig();
+        (,
+        ,
+        address vrfCoordinator,
+        ,
+        uint64 subscriptionId,
+        ,
+        ) = config.activeConfig();
+        addConsumer(raffle, vrfCoordinator, subscriptionId);
+    }
+
+    function addConsumer(address raffle, address vrfCoordinator, uint64 subId) public {
+        console.log("Adding consumer contract: ", raffle);
+        console.log("Using vrfCoordinator: ", vrfCoordinator);
+        console.log("OnChain ID: ", block.chainid);
+        vm.startBroadcast();
+        VRFCoordinatorV2Mock(vrfCoordinator).addConsumer(subId, raffle);
+        vm.stopBroadcast();
+    }
+
+    function run() external {
+        address contractAddress = DevOpsTools.get_most_recent_deployment(
+            "Raffle",
+            block.chainid
+        );
+
+        addConsumerUsingConfig(contractAddress);
     }
 }

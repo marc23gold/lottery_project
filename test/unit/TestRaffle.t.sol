@@ -6,6 +6,8 @@ import {DeployRaffle} from "../../script/DeployRaffle.s.sol";
 import {Test, console} from "forge-std/Test.sol";
 import {Raffle} from "../../src/Raffle.sol";
 import {HelperConfig} from "../../script/HelperConfig.s.sol";
+import {Vm} from "forge-std/Vm.sol";
+import {VRFCoordinatorV2Mock} from "@chainlink/contracts/src/v0.8/mocks/VRFCoordinatorV2Mock.sol";
 
 contract TestRaffle is Test {
     Raffle raffle;
@@ -22,6 +24,7 @@ contract TestRaffle is Test {
     bytes32 keyHash;
     uint64 subscriptionId;
     uint32 callbackGasLimit;
+    address link;
         
 
     function setUp() external {
@@ -32,7 +35,8 @@ contract TestRaffle is Test {
          vrfCoordinator,
         keyHash,
         subscriptionId,
-        callbackGasLimit
+        callbackGasLimit,
+        link
         ) = config.activeConfig();
         console.log("Raffle address: ", address(raffle));
         vm.deal(PLAYER, STARTING_BALANCE);
@@ -89,4 +93,84 @@ contract TestRaffle is Test {
         raffle.enterRaffle{value: entranceFee}();
     }
 
+    //check up keep tests
+    function testCheckUpKeepTurnsFalseIfItHasNoBalance() external {
+        //Arrange
+        vm.warp(block.timestamp + interval + 1);
+        vm.roll(block.number + 1);
+
+        //Act
+        (bool upkeepNeeded,) = raffle.checkUpkeep("");
+
+        //Assert
+        assert(!upkeepNeeded);
+    }
+
+    function testCheckUpKeepReturnsFalseIfRaffleNotOpen() external {
+        //arrange
+        vm.prank(PLAYER);
+        raffle.enterRaffle{value: entranceFee}();
+        vm.warp(block.timestamp + interval + 1);
+        vm.roll(block.number + 1);
+        raffle.performUpkeep("");
+
+        //act 
+        (bool upkeepNeeded,) = raffle.checkUpkeep(""); 
+
+        //assert
+        assert(upkeepNeeded == false);
+    }
+
+    function testUpKeepCanOnlyRunIfCheckUpKeepIsTrue() public {
+        //arrange
+        vm.prank(PLAYER);
+        raffle.enterRaffle{value: entranceFee}();
+        vm.warp(block.timestamp + interval + 1);
+        vm.roll(block.number + 1);
+
+        //act / assert
+        raffle.performUpkeep("");
+    }
+
+    function testPerfromUpkeepIfCheckUpkeepIsFalse() public {
+        //arrange
+        uint256 currentBalance = 0;
+        uint256 numPlayers = 0; 
+        uint256 raffleState = 0; 
+        //act/assert 
+        vm.expectRevert(abi.encodeWithSelector(Raffle.Raffle__NotEnoughEth.selector, currentBalance, numPlayers, raffleState));
+        raffle.performUpkeep("");
+
+        
+    }
+
+    modifier arrangeTest()  {
+        vm.prank(PLAYER);
+        raffle.enterRaffle{value: entranceFee}();
+        vm.warp(block.timestamp + interval + 1);
+        vm.roll(block.number + 1);
+        _;
+    }
+        //What if I need to test using the output of an event? 
+    function testPerformUpKeepStateandEvent() public  arrangeTest{
+        //arrange 
+
+        //act 
+        vm.recordLogs();
+        raffle.performUpkeep("");
+        Vm.Log[] memory entries = vm.getRecordedLogs();
+        bytes32 requestId = entries[1].topics[1];
+
+        Raffle.RaffleState rState = raffle.getRaffleState();
+
+        //assert 
+        assert(uint256(requestId) > 0);
+        assert(uint256(rState) == 1);
+    }
+
+    function testFulfilRandomWordsCanOnlyBeCalledAfterPerformUpKeep() public arrangeTest {
+        //arrange 
+        vm.expectRevert("nonexistent request");
+        VRFCoordinatorV2Mock(vrfCoordinator).fulfillRandomWords(0, new uint256[](0));
+    }
 }

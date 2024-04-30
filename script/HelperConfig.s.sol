@@ -3,6 +3,7 @@ pragma solidity ^0.8.18;
 
 import {Script} from "forge-std/Script.sol";
 import {VRFCoordinatorV2Mock} from "chainlink-brownie-contracts/contracts/src/v0.8/mocks/VRFCoordinatorV2Mock.sol";
+import {LinkToken} from "../test/mocks/LinkToken.sol";
 
 
 contract HelperConfig is Script {
@@ -74,6 +75,7 @@ contract HelperConfig is Script {
 
         vm.startBroadcast();
         VRFCoordinatorV2Mock mock = new VRFCoordinatorV2Mock(baseFee, gasPriceLink);
+        LinkToken link = new LinkToken();
         vm.stopBroadcast(); 
 
         ConfigType memory anvilConfig = ConfigType({
@@ -82,7 +84,8 @@ contract HelperConfig is Script {
         vrfCoordinator: address(mock),
         keyHash: 0x474e34a077df58807dbe9c96d3c009b23b3c6d0cce433e59bbf5b34f823bc56c,
         subscriptionId: 0,
-        callbackGasLimit: 500000
+        callbackGasLimit: 500000,
+        link: address(link)
         });
         return anvilConfig;
     }
