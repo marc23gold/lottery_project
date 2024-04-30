@@ -19,13 +19,14 @@ contract CreateSubscription is Script{
         ,
         ,
         ,
+        uint256 deployerKey
         ) = config.activeConfig();
-        return createSubscription(vrfCoordinator);
+        return createSubscription(vrfCoordinator, deployerKey);
     }
 
-    function createSubscription(address vrfCoordinator) public returns(uint64){
+    function createSubscription(address vrfCoordinator, uint256 deployerKey) public returns(uint64){
         console.log("Creating subscription on ChainId:,", block.chainid);
-        vm.startBroadcast();
+        vm.startBroadcast(deployerKey);
         uint64 subId = VRFCoordinatorV2Mock(vrfCoordinator).createSubscription();
         vm.stopBroadcast();
         console.log("Your sub id is: ", subId);
@@ -48,22 +49,23 @@ contract FundSubscription is Script{
         address vrfCoordinator,
         ,
         uint64 subscriptionId,,address link,
+        uint256 deployerKey
         ) = config.activeConfig();
-        fundSubscription(vrfCoordinator, subscriptionId, link); 
+        fundSubscription(vrfCoordinator, subscriptionId, link, deployerKey); 
     }
 
-    function fundSubscription(address vrfCoordinator, uint64 subscriptionId, address link) public {
+    function fundSubscription(address vrfCoordinator, uint64 subscriptionId, address link, uint256 deployerKey) public {
         console.log("Funding subscription on ChainId:,", block.chainid);
         console.log("Funding subscription with link token: ", address(link));
         console.log("On ChainID:", block.chainid);
         console.log("Using vrfCoordinator: ", vrfCoordinator);
         if(block.chainid == 31337) {
-            vm.startBroadcast();
+            vm.startBroadcast(deployerKey);
             VRFCoordinatorV2Mock(vrfCoordinator).fundSubscription(subscriptionId, FUND_AMOUNT);
 
             vm.stopBroadcast();
         } else {
-            vm.startBroadcast();
+            vm.startBroadcast(deployerKey);
             LinkToken(link).transferAndCall(vrfCoordinator, FUND_AMOUNT, abi.encode(subscriptionId));
             vm.stopBroadcast();
         }

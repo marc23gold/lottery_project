@@ -169,13 +169,20 @@ contract TestRaffle is Test {
         assert(uint256(rState) == 1);
     }
 
-    function testFulfilRandomWordsCanOnlyBeCalledAfterPerformUpKeep(uint256 randomRequestId) public arrangeTest {
+    modifier skipFork() {
+        if(block.chainid != 31337) {
+            return;
+        }
+        _;
+    }
+
+    function testFulfilRandomWordsCanOnlyBeCalledAfterPerformUpKeep(uint256 randomRequestId) public arrangeTest skipFork{
         //arrange 
         vm.expectRevert("nonexistent request");
         VRFCoordinatorV2Mock(vrfCoordinator).fulfillRandomWords(randomRequestId, address(raffle));
     }
 
-    function testFulfillRandomWordsPicksAWinnerResetsAndSendsMoney() public arrangeTest {
+    function testFulfillRandomWordsPicksAWinnerResetsAndSendsMoney() public arrangeTest skipFork {
         //arrange 
         uint256 additionalEntrants = 5; 
         uint256 startingIndex = 1;
