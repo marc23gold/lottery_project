@@ -171,6 +171,6 @@ contract TestRaffle is Test {
     function testFulfilRandomWordsCanOnlyBeCalledAfterPerformUpKeep() public arrangeTest {
         //arrange 
         vm.expectRevert("nonexistent request");
-        VRFCoordinatorV2Mock(vrfCoordinator).fulfillRandomWords(0, new uint256[](0));
+        VRFCoordinatorV2Mock(vrfCoordinator).fulfillRandomWords(0, address(raffle));
     }
 }
