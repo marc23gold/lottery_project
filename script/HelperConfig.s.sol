@@ -11,6 +11,7 @@ contract HelperConfig is Script {
     // uint8 public constant DECIMALS = 8;
     // int256 public constant INITAL_ANSWER = 2000e8;
     ConfigType public activeConfig;
+    uint256 public constant anvilKey = 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80;
 
     struct ConfigType{
         uint256 entranceFee;
@@ -20,6 +21,7 @@ contract HelperConfig is Script {
         uint64 subscriptionId;
         uint32 callbackGasLimit;
         address link;
+        uint256 deployerKey;
     }
 
     constructor() {
@@ -37,7 +39,7 @@ contract HelperConfig is Script {
     }
     } 
 
-    function getSepoliaEthConfig() public pure returns(ConfigType memory) {
+    function getSepoliaEthConfig() public view returns(ConfigType memory) {
         ConfigType memory sepoliaConfig = ConfigType({
         entranceFee: 0.01 ether,
         interval: 30,
@@ -45,7 +47,9 @@ contract HelperConfig is Script {
         keyHash: 0x474e34a077df58807dbe9c96d3c009b23b3c6d0cce433e59bbf5b34f823bc56c,
         subscriptionId: 0,
         callbackGasLimit: 500000,
-        link: 0x779877A7B0D9E8603169DdbD7836e478b4624789
+        link: 0x779877A7B0D9E8603169DdbD7836e478b4624789,
+        deployerKey: vm.envUint("PRIVATE_KEY")
+
         });
         return sepoliaConfig;
        
@@ -85,7 +89,9 @@ contract HelperConfig is Script {
         keyHash: 0x474e34a077df58807dbe9c96d3c009b23b3c6d0cce433e59bbf5b34f823bc56c,
         subscriptionId: 0,
         callbackGasLimit: 500000,
-        link: address(link)
+        link: address(link),
+        deployerKey: anvilKey
+
         });
         return anvilConfig;
     }

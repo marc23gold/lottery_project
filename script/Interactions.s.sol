@@ -18,6 +18,7 @@ contract CreateSubscription is Script{
         ,
         ,
         ,
+        ,
         ) = config.activeConfig();
         return createSubscription(vrfCoordinator);
     }
@@ -46,7 +47,7 @@ contract FundSubscription is Script{
         ,
         address vrfCoordinator,
         ,
-        uint64 subscriptionId,,address link
+        uint64 subscriptionId,,address link,
         ) = config.activeConfig();
         fundSubscription(vrfCoordinator, subscriptionId, link); 
     }
@@ -83,15 +84,17 @@ contract AddConsumer is Script{
         ,
         uint64 subscriptionId,
         ,
+        ,
+        uint256 deployerKey
         ) = config.activeConfig();
-        addConsumer(raffle, vrfCoordinator, subscriptionId);
+        addConsumer(raffle, vrfCoordinator, subscriptionId, deployerKey);
     }
 
-    function addConsumer(address raffle, address vrfCoordinator, uint64 subId) public {
+    function addConsumer(address raffle, address vrfCoordinator, uint64 subId, uint256 deployerKey) public {
         console.log("Adding consumer contract: ", raffle);
         console.log("Using vrfCoordinator: ", vrfCoordinator);
         console.log("OnChain ID: ", block.chainid);
-        vm.startBroadcast();
+        vm.startBroadcast(deployerKey);
         VRFCoordinatorV2Mock(vrfCoordinator).addConsumer(subId, raffle);
         vm.stopBroadcast();
     }

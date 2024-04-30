@@ -36,7 +36,8 @@ contract TestRaffle is Test {
         keyHash,
         subscriptionId,
         callbackGasLimit,
-        link
+        link,
+        
         ) = config.activeConfig();
         console.log("Raffle address: ", address(raffle));
         vm.deal(PLAYER, STARTING_BALANCE);
@@ -168,9 +169,36 @@ contract TestRaffle is Test {
         assert(uint256(rState) == 1);
     }
 
-    function testFulfilRandomWordsCanOnlyBeCalledAfterPerformUpKeep() public arrangeTest {
+    function testFulfilRandomWordsCanOnlyBeCalledAfterPerformUpKeep(uint256 randomRequestId) public arrangeTest {
         //arrange 
         vm.expectRevert("nonexistent request");
-        VRFCoordinatorV2Mock(vrfCoordinator).fulfillRandomWords(0, address(raffle));
+        VRFCoordinatorV2Mock(vrfCoordinator).fulfillRandomWords(randomRequestId, address(raffle));
+    }
+
+    function testFulfillRandomWordsPicksAWinnerResetsAndSendsMoney() public arrangeTest {
+        //arrange 
+        uint256 additionalEntrants = 5; 
+        uint256 startingIndex = 1;
+        for(uint i = startingIndex; i < startingIndex + additionalEntrants; i++) {
+            address player = address(uint160(i)); //address of index 
+            hoax(player, STARTING_BALANCE);
+            raffle.enterRaffle{value: entranceFee}(); 
+        }
+
+        uint256 prize = entranceFee * (additionalEntrants + 1);
+
+        vm.recordLogs();
+        raffle.performUpkeep("");
+        Vm.Log[] memory entries = vm.getRecordedLogs();
+        bytes32 requestId = entries[1].topics[1];
+        //pretend to be chainlink vrf to get random number 
+        VRFCoordinatorV2Mock(vrfCoordinator).fulfillRandomWords(uint256(requestId), address(raffle));
+        //assert 
+        assert(uint256(raffle.getRaffleState()) == 0);
+        assert(raffle.getRecentWinner() != address(0));
+        assert(raffle.getPlayerCount() == 0);
+        assert(raffle.getRecentWinner().balance == STARTING_BALANCE + prize - entranceFee);
+    
+
     }
 }
